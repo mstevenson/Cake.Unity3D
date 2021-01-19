@@ -52,5 +52,12 @@
         /// Default: false
         /// </summary>
         public bool ForceScriptInstall { get; set; }
+        
+        /// <summary>
+        /// Should we build addressables before building
+        /// the executable.
+        /// Default: false
+        /// </summary>
+        public bool BuildAddressables { get; set; }
     }
 }

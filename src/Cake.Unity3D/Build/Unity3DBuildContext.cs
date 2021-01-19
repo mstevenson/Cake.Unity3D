@@ -67,6 +67,7 @@ namespace Cake.Unity3D
             Console.WriteLine($"UnityEditorLocation: {m_buildOptions.UnityEditorLocation}");
             Console.WriteLine($"OutputEditorLog: {m_buildOptions.OutputEditorLog}");
             Console.WriteLine($"ForceScriptInstall: {m_buildOptions.ForceScriptInstall}");
+            Console.WriteLine($"BuildAddressables: {m_buildOptions.BuildAddressables}");
         }
 
         /// <summary>
@@ -90,7 +91,8 @@ namespace Cake.Unity3D
                 $"-projectPath \"{m_projectFolder.FullPath}\" " +
                 "-executeMethod Cake.Unity3D.AutomatedBuild.Build " +
                 $"--output-path=\"{m_buildOptions.OutputPath}\" " +
-                $"--platform={m_buildOptions.Platform} ";
+                $"--platform={m_buildOptions.Platform} " + 
+                $"--build-addressables={m_buildOptions.BuildAddressables} ";
 
             if (!string.IsNullOrEmpty(m_buildOptions.BuildVersion))
             {
@@ -152,6 +154,15 @@ namespace Cake.Unity3D
         {
             return System.IO.Path.Combine(m_projectFolder.FullPath, "Assets", "Cake.Unity3D", "Editor", "AutomatedBuild.cs");
         }
+        
+        /// <summary>
+        /// Gets the path to the automated build script assembly definition within a provided Unity3D project path.
+        /// </summary>
+        /// <returns>The absolute path to the assembly definition file.</returns>
+        private string GetAutomatedBuildScriptAssemblyDefinitionPath()
+        {
+            return System.IO.Path.Combine(m_projectFolder.FullPath, "Assets", "Cake.Unity3D", "Editor", "Cake.Unity3D.asmdef");
+        }
 
         /// <summary>
         /// Checks to see if the provided project has the automated build script already.
@@ -169,17 +180,25 @@ namespace Cake.Unity3D
         {
             Console.WriteLine("Installing AutomatedBuild Script...");
 
-            var path = GetAutomatedBuildScriptPath();
+            var buildScriptPath = GetAutomatedBuildScriptPath();
+            var asmdefPath = GetAutomatedBuildScriptAssemblyDefinitionPath();
 
             // Make sure the directories required for the script exist.
-            var installDirectory = System.IO.Path.GetDirectoryName(path);
+            var installDirectory = System.IO.Path.GetDirectoryName(buildScriptPath);
             if (!string.IsNullOrEmpty(installDirectory) && !System.IO.Directory.Exists(installDirectory))
             {
                 System.IO.Directory.CreateDirectory(installDirectory);
             }
 
-            // Extract the embedded resource to the Unity3D project provided.
-            var resourceName = "Cake.Unity3D.Resources.AutomatedBuild.template";
+            // Extract the embedded resources to the Unity3D project provided.
+            CopyResource("Cake.Unity3D.Resources.AssemblyDefinition.template", asmdefPath);
+            CopyResource("Cake.Unity3D.Resources.AutomatedBuild.template", buildScriptPath);
+            
+            Console.WriteLine($"AutomatedBuild Script installed to \"{buildScriptPath}\"");
+        }
+
+        private static void CopyResource(string resourceName, string outputPath)
+        {
             using (var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
             {
                 if (resource == null)
@@ -187,13 +206,11 @@ namespace Cake.Unity3D
                     throw new Exception($"Failed to find the embedded resource '{resourceName}'");
                 }
 
-                using (var file = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                using (var file = new System.IO.FileStream(outputPath, System.IO.FileMode.Create, System.IO.FileAccess.Write))
                 {
                     resource.CopyTo(file);
                 }
             }
-
-            Console.WriteLine($"AutomatedBuild Script installed to \"{path}\"");
         }
     }
 }

@@ -8,6 +8,11 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 #endif
 
+#if USE_ADDRESSABLES
+using UnityEditor.AddressableAssets;
+using UnityEditor.AddressableAssets.Settings;
+#endif
+
 namespace Cake.Unity3D
 {
     public static class AutomatedBuild
@@ -31,6 +36,17 @@ namespace Cake.Unity3D
                 options = BuildOptions.None
             };
 
+#if USE_ADDRESSABLES
+            var buildAddressables = ParseOption(options, "build-addressables", false);
+            if (buildAddressables)
+            {
+                Debug.Log("[Cake.Unity3D] Building Addressables");
+                AddressableAssetSettings.CleanPlayerContent(AddressableAssetSettingsDefaultObject.Settings.ActivePlayerDataBuilder);
+                AddressableAssetSettings.BuildPlayerContent();
+            }
+#endif
+
+            Debug.Log("[Cake.Unity3D] Building executable");
             var report = BuildPipeline.BuildPlayer(buildPlayerOptions);
 
 #if UNITY_2018_1_OR_NEWER
